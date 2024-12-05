@@ -5,12 +5,36 @@ const bcrypt=require('bcrypt')
 const jwt=require("jsonwebtoken")
 
 const User=require("../models/user.model")
+const File=require('../models/file.model')
+const authenticate=require("../middlewares/authenticated")
 
 router.get("/register",(req,res)=>{
     res.render("register");
 })
 router.get("/login",(req,res)=>{
     res.render("login");
+})
+router.get("/profile",authenticate,async(req,res)=>{
+        const user=await User.findOne({_id:req.user.userId})
+        if(!user){
+            return res.status(404).json({
+                message:"profile not found"
+            })
+        }
+        
+    res.render("profile",{
+        person:user
+    });
+})
+router.get("/home",authenticate,async(req,res)=>{
+    const userFiles=await File.find({
+        fileowner:req.user.userId
+    })
+    //console.log(userFiles)
+
+    res.render("home",{
+        files:userFiles
+    })
 })
 
 router.post("/register",
@@ -62,11 +86,16 @@ router.post("/login",
 
 
     res.cookie("token",token);
-    res.send("logged in")
+   res.redirect("home")
 
 })
-router.post("/logout",(req,res)=>{
-
+router.post("/logout",authenticate,async(req,res)=>{
+    const ress=res.cookie("token","")
+        if(ress){
+            return res.status(200).json({
+                message:"logged out"
+            })
+        }
 })
 
 module.exports=router;

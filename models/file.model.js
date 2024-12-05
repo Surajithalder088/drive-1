@@ -9,6 +9,10 @@ const fileSchema=new mongoose.Schema({
         type:String,
         required:true
     },
+    file_public_id:{
+        type:String,
+        required:true
+    },
     fileowner:{
         type:mongoose.Schema.Types.ObjectId,
         ref:'user',

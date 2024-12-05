@@ -1,33 +1,37 @@
 const express=require("express");
 const axios=require("axios");
 const router=express.Router();
+const fs=require("fs").promises;
+const https = require('https')
+const  cloudinary =require('cloudinary').v2;
 const upload=require("../middlewares/multer.middleware");
 const cloudinaryUploader=require("../utils/cloudinary")
 const File=require('../models/file.model')
 const authenticate=require("../middlewares/authenticated")
 
 
-router.get("/home",authenticate,async(req,res)=>{
-    const userFiles=await File.find({
-        fileowner:req.user.userId
-    })
-    //console.log(userFiles)
+  // Configuration
+  cloudinary.config({ 
+    cloud_name: process.env.CLOUDINARY_CLOUDE_NAME, 
+    api_key: process.env.CLOUDINARY_API_KEY, 
+    api_secret: process.env.CLOUDINARY_API_SECRET, 
+});
 
-    res.render("home",{
-        files:userFiles
-    })
-})
+
 
 router.post('/upload-file',authenticate,upload.single('file'),async(req,res)=>{
     try{
             const localfile=req.file.path;
           const response=await cloudinaryUploader(localfile);
-      
+        
         const newfile=File.create({
-            filepath:response,
+            filepath:response.url,
+            file_public_id:response.public_id,
             filename:localfile,
             fileowner:req.user.userId
         })
+       
+        
     res.status(200).json({
         massage:"file uploaded",
         path:response
@@ -46,18 +50,32 @@ router.post('/upload-file',authenticate,upload.single('file'),async(req,res)=>{
 
 router.get("/download-file",authenticate,async(req,res)=>{
     try {
-        console.log(req.query.url);
-        
+        console.log(req.query.id);
+
         const fileUrl=req.query.url;
         if(!fileUrl){
             return res.status(400).json({message:'file url required'})
         }
         const encodedUrl=encodeURI(fileUrl);
 
+//-----------------------------------------------------------
+const fileExtension = encodedUrl.split('.').pop(); //checking pdf or not
+
+if (fileExtension === 'pdf'){
+     console.log("this is pdf");
+  
+    return res.status(200).json({sorry:'pdf files are not support to download'})
+   
+}
+    
+  //-----------------------------------------------------------------
         const response=await axios({  //fetch the file from cloudinary
             method:'GET',
             url:encodedUrl,
             responseType:'arraybuffer',
+            headers:{
+                Accept:'*/*'  //accept all type data
+            },
             auth:{
                 username:process.env.CLOUDINARY_API_KEY,
                 password:process.env.CLOUDINARY_API_SECRET,
@@ -80,10 +98,45 @@ router.get("/download-file",authenticate,async(req,res)=>{
             })
         }
         res.status(500).json({
-            message:"unable to download",
-            error
+            message:"unable to download totally failed",
+            error:error
         })
         
+    }
+})
+
+router.get("/delete-file",authenticate,async(req,res)=>{
+    const public_id=req.query.id;
+    console.log(req.query.id);
+    
+    if(!public_id){
+        return res.status(400).json({
+            message:"public id is required"
+        })
+    }
+    try {
+       const result= await cloudinary.uploader.destroy(
+            public_id,{
+                resource_type:'raw'
+            } );
+
+
+            if(result.result =='ok'){
+
+                const file= await File.deleteOne({file_public_id:public_id})
+                if(file){
+                    return res.status(200).json({
+                    message:"file deleted successfully",
+                    result
+                })
+                }
+            }
+
+    } catch (error) {
+        res.status(500).json({
+            message:"error to delete file",
+            error
+        })
     }
 })
 

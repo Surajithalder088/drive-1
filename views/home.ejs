@@ -18,8 +18,14 @@
         onclick="showPopUp()"
     class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
     >
-        upload file
+        upload new file
     </button>
+    <a 
+    href="/user/profile"
+    >
+    <div class="profile absolute top-6 right-6 bg-blue-200 hover:bg-blue-500 rounded text-gray-700 hover:text-white">
+        <h5 class="p-4">profile</h5>
+    </div></a>
 
 <div class="pop hidden  backdrop-blur fixed top-0 left-0 h-screen w-screen flex item-center justify-center">
     <form
@@ -61,13 +67,20 @@
             href="<%= file.filepath %>"
             >
         <div 
-        class="p-2 cursor-pointer rounded-md bg-gray-300"> 
+        class="p-2 mt-2 cursor-pointer rounded-md bg-gray-300 "> 
             <h1><%=file.filename %></h1>
             <a
-            href="/download-file?url=<%= file.filepath %>"
+            href="/download-file?url=<%= file.filepath %>&id=<%= file.file_public_id %>"
             >
             <button><i class="ri-file-download-fill"></i></button></a>
+         <a
+        href="/delete-file?id=<%= file.file_public_id %>"
+        >
+        <button><i class="ri-delete-bin-fill"></i></button></a>
+    </div></a>
+
         </div></a>
+       
         <%}) %>
     </div>
 

@@ -25,7 +25,7 @@ const fs =require('fs');
                 if(response){
                     fs.unlinkSync(localFilePath);
                 }
-                 return response.url;
+                 return response;
            
         }catch(err){
             fs.unlinkSync(localFilePath);//revome the local file as failed to upload
