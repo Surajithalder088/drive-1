@@ -89,7 +89,7 @@ router.post('/upload-file',authenticate,upload.single('file'),async(req,res)=>{
     
     
     }catch(err){
-        res.status(400).json({
+        res.status(500).json({
             
             massage:"failed to uploaded",
             err
