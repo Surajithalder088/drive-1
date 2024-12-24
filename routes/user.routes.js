@@ -81,11 +81,11 @@ router.post("/login",
         userId:user._id,
         email:user.email,
         fullname:user.fullname
-    },process.env.JWT_SECRET,{httpOnly:true,secure:true})
+    },process.env.JWT_SECRET)
 
 
 
-    res.cookie("token",token);
+    res.cookie("token",token,{httpOnly:true,secure:true});
    res.redirect("home")
 
 })
