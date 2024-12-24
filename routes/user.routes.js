@@ -81,7 +81,7 @@ router.post("/login",
         userId:user._id,
         email:user.email,
         fullname:user.fullname
-    },process.env.JWT_SECRET)
+    },process.env.JWT_SECRET,{httpOnly:true,secure:false})
 
 
 
