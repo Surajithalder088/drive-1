@@ -63,7 +63,7 @@ router.post("/register",
 router.post("/login",
     body('email').trim().isEmail(),
     body('password').trim().isLength({min:5}),
-    {userCredentials:true},
+    
    async (req,res)=>{
     const error=validationResult(req);
       if(!error.isEmpty()){
