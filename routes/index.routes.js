@@ -8,7 +8,7 @@ const upload=require("../middlewares/multer.middleware");
 const cloudinaryUploader=require("../utils/cloudinary")
 const File=require('../models/file.model')
 const authenticate=require("../middlewares/authenticated")
-
+const supabase =require("../utils/supabaseClient")
 
   // Configuration
   cloudinary.config({ 
@@ -22,8 +22,52 @@ const authenticate=require("../middlewares/authenticated")
 router.post('/upload-file',authenticate,upload.single('file'),async(req,res)=>{
     try{
             const localfile=req.file.path;
-          const response=await cloudinaryUploader(localfile);
-        
+            const fileExtension = localfile.split('.').pop()
+//-----------------------------------------------------------------------------------
+            if(fileExtension==='pdf'){
+                console.log("this is pdf");
+                    /// as file is pdf so it will be stored on supabase instead of cloudinary
+                   const time=Date.now()
+                    const uniqueFilename=`${time}_${localfile}`
+                    const {data,error}=await supabase.storage.from('drive-1').upload(
+                    uniqueFilename,
+                    localfile.buffer,
+                    {
+                      upsert:true
+                    })
+                    if(error){
+                        return res.status(500).json({
+                            message:"failed to upload on supabase",
+                            error
+                        })
+                    }
+                    if(data){
+                        const newfile=File.create({
+                            filepath:data.fullPath,
+                            file_public_id:data.id,
+                            filename:localfile,
+                            fileowner:req.user.userId
+                        })
+                        if(!newfile){
+                            return res.status(400).json({
+                            
+                                massage:"failed to uploaded om database",
+                                err
+                            })
+                        }
+                      
+                    return res.status(200).json({
+                       data, newfile,
+                    })
+                   
+                }
+            }
+              
+            
+   //----------------------------------------------------------------------         
+            
+            const response=await cloudinaryUploader(localfile);
+ 
         const newfile=File.create({
             filepath:response.url,
             file_public_id:response.public_id,
@@ -31,7 +75,13 @@ router.post('/upload-file',authenticate,upload.single('file'),async(req,res)=>{
             fileowner:req.user.userId
         })
        
-        
+        if(!newfile){
+            return res.status(400).json({
+            
+                massage:"failed to uploaded om database",
+                err
+            })
+        }
     res.status(200).json({
         massage:"file uploaded",
         path:response
@@ -63,8 +113,20 @@ const fileExtension = encodedUrl.split('.').pop(); //checking pdf or not
 
 if (fileExtension === 'pdf'){
      console.log("this is pdf");
+    console.log(encodedUrl);
+    
+     const {data,error}=await supabase.storage.from('drive-1').download(encodedUrl);
+     if(error){
+        console.log(error);
+        
+        return res.status(400).json({message:"failed to download from supabase",error})
+     }
+     res.setHeader('Content-Disposition',`attatchment;filename=${encodedUrl}`);
+     res.setHeader('Content-Type','application/octet-stream');
+     data.pipe(res);
   
     return res.status(200).json({sorry:'pdf files are not support to download'})
+
    
 }
     
